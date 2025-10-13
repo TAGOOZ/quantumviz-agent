@@ -6,16 +6,21 @@ Integrate AgentCore with quantum circuit analysis and explanations.
 
 import boto3
 import json
+import sys
+import os
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 import time
+# Add parent directory to path to import config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import Config
 
 class QuantumAIIntegration:
     """AI-powered quantum circuit analysis and explanation."""
     
     def __init__(self):
-        self.agent_id = 'DRC1I6SIWE'
-        self.region = 'eu-central-1'
+        self.agent_id = os.getenv('AGENT_ID', 'DRC1I6SIWE')  # Use env var or default
+        self.region = Config.AWS_REGION
         self.runtime = boto3.client('bedrock-agent-runtime', region_name=self.region)
         self.simulator = LocalSimulator()
         
@@ -24,7 +29,7 @@ class QuantumAIIntegration:
         print("🏷️  Creating agent alias...")
         
         try:
-            agentcore = boto3.client('bedrock-agent', region_name=self.region)
+            agentcore = boto3.client('bedrock-agent', region_name=Config.AWS_REGION)
             
             response = agentcore.create_agent_alias(
                 agentId=self.agent_id,
@@ -47,7 +52,7 @@ class QuantumAIIntegration:
     def get_agent_alias(self):
         """Get existing agent alias."""
         try:
-            agentcore = boto3.client('bedrock-agent', region_name=self.region)
+            agentcore = boto3.client('bedrock-agent', region_name=Config.AWS_REGION)
             
             response = agentcore.list_agent_aliases(agentId=self.agent_id)
             aliases = response['agentAliasSummaries']

@@ -7,20 +7,33 @@ Deploy and configure the core AI agent runtime.
 import boto3
 import json
 import time
+import sys
+import os
+import logging
+from botocore.exceptions import ClientError
+# Add parent directory to path to import config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import Config
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def create_agentcore_agent():
     """Create the AgentCore agent for QuantumViz."""
+    logger.info("Creating AgentCore agent for QuantumViz...")
     print("🤖 Creating AgentCore agent for QuantumViz...")
     
     try:
         # Initialize AgentCore client
-        agentcore = boto3.client('bedrock-agent', region_name='eu-central-1')
+        logger.debug(f"Initializing Bedrock Agent client in region: {Config.AWS_REGION}")
+        agentcore = boto3.client('bedrock-agent', region_name=Config.AWS_REGION)
         
         # Agent configuration
         agent_config = {
             'agentName': 'QuantumViz-Agent',
             'description': 'AI agent that converts quantum code into interactive 3D visualizations with natural language explanations',
-            'foundationModel': 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+            'foundationModel': Config.FOUNDATION_MODEL,
             'instruction': """
             You are QuantumViz, an AI agent specialized in quantum computing education. Your mission is to:
 
@@ -31,22 +44,31 @@ def create_agentcore_agent():
             5. Provide step-by-step guidance for quantum circuit understanding
 
             Always be educational, encouraging, and accurate in your quantum explanations.
-            """,
+            """.strip(),
             'idleSessionTTLInSeconds': 1800,  # 30 minutes
-            'agentResourceRoleArn': 'arn:aws:iam::082979152822:role/AgentExecutionRole'
+            'agentResourceRoleArn': Config.get_agent_role_arn()
         }
         
         # Create the agent
+        logger.info("Creating agent with Bedrock Agent service...")
         response = agentcore.create_agent(**agent_config)
         agent_id = response['agent']['agentId']
         
+        logger.info(f"Agent created successfully with ID: {agent_id}")
         print(f"✅ AgentCore agent created successfully!")
         print(f"   Agent ID: {agent_id}")
         print(f"   Agent Name: {agent_config['agentName']}")
         
         return agent_id
         
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        error_message = e.response['Error']['Message']
+        logger.error(f"AWS ClientError during agent creation: {error_code} - {error_message}")
+        print(f"❌ AgentCore agent creation error: {error_message}")
+        return None
     except Exception as e:
+        logger.error(f"Unexpected error during agent creation: {str(e)}", exc_info=True)
         print(f"❌ AgentCore agent creation error: {e}")
         return None
 
@@ -55,7 +77,7 @@ def create_agent_execution_role():
     print("\n🔐 Creating AgentCore execution role...")
     
     try:
-        iam = boto3.client('iam', region_name='eu-central-1')
+        iam = boto3.client('iam', region_name=Config.AWS_REGION)
         
         # Trust policy for AgentCore
         trust_policy = {
@@ -73,21 +95,26 @@ def create_agent_execution_role():
         
         # Create the role
         role_response = iam.create_role(
-            RoleName='AgentExecutionRole',
+            RoleName=Config.AGENT_ROLE_NAME,
             AssumeRolePolicyDocument=json.dumps(trust_policy),
             Description='Role for QuantumViz AgentCore execution'
         )
         
-        # Attach policies
+        # Attach more restrictive policies
         policies = [
-            'arn:aws:iam::aws:policy/AmazonBedrockFullAccess',
-            'arn:aws:iam::aws:policy/AmazonS3FullAccess',
-            'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
+            'arn:aws:iam::aws:policy/AmazonBedrockReadOnlyAccess',
         ]
+        
+        # Only attach write policies if explicitly configured
+        if os.getenv('AGENT_FULL_ACCESS', 'false').lower() == 'true':
+            policies.extend([
+                'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess',
+                'arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess'
+            ])
         
         for policy_arn in policies:
             iam.attach_role_policy(
-                RoleName='AgentExecutionRole',
+                RoleName=Config.AGENT_ROLE_NAME,
                 PolicyArn=policy_arn
             )
         
@@ -110,7 +137,7 @@ def create_agent_knowledge_base():
     print("\n📚 Creating quantum computing knowledge base...")
     
     try:
-        agentcore = boto3.client('bedrock-agent', region_name='eu-central-1')
+        agentcore = boto3.client('bedrock-agent', region_name=Config.AWS_REGION)
         
         # Knowledge base configuration
         kb_config = {
@@ -119,14 +146,14 @@ def create_agent_knowledge_base():
             'knowledgeBaseConfiguration': {
                 'type': 'VECTOR',
                 'vectorKnowledgeBaseConfiguration': {
-                    'embeddingModelArn': 'arn:aws:bedrock:eu-central-1::foundation-model/amazon.titan-embed-text-v1'
+                    'embeddingModelArn': Config.EMBEDDING_MODEL_ARN
                 }
             },
             'storageConfiguration': {
                 'type': 'OPENSEARCH_SERVERLESS',
                 'opensearchServerlessConfiguration': {
-                    'collectionArn': 'arn:aws:aoss:eu-central-1:082979152822:collection/quantumviz-collection',
-                    'vectorIndexName': 'quantum-knowledge-index',
+                    'collectionArn': Config.get_kb_collection_arn(),
+                    'vectorIndexName': Config.VECTOR_INDEX_NAME,
                     'fieldMapping': {
                         'vectorField': 'vector',
                         'textField': 'text',
@@ -156,7 +183,7 @@ def test_agentcore_agent():
     print("\n🧪 Testing AgentCore agent...")
     
     try:
-        agentcore = boto3.client('bedrock-agent', region_name='eu-central-1')
+        agentcore = boto3.client('bedrock-agent', region_name=Config.AWS_REGION)
         
         # List agents
         response = agentcore.list_agents()
@@ -180,7 +207,7 @@ def create_agent_alias():
     print("\n🏷️  Creating agent alias...")
     
     try:
-        agentcore = boto3.client('bedrock-agent', region_name='eu-central-1')
+        agentcore = boto3.client('bedrock-agent', region_name=Config.AWS_REGION)
         
         # List agents to get the latest agent ID
         response = agentcore.list_agents()

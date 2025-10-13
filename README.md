@@ -1,172 +1,246 @@
 # QuantumViz Agent
 
-**AI agent that converts quantum code into interactive 3D visualizations with natural language explanations.**
+An AI-powered platform that transforms quantum circuits into interactive 3D visualizations with natural language explanations. Built for quantum computing education and research.
 
-## What It Does
+## Overview
 
-- Takes quantum circuits (QASM, Qiskit, Cirq) and creates interactive 3D visualizations
-- Uses AI to explain quantum concepts in simple terms
-- Adapts explanations to user skill level (beginner/intermediate/advanced)
-- Runs real quantum simulations with Amazon Braket
+QuantumViz Agent bridges the gap between complex quantum computing concepts and accessible learning by providing:
 
-## Engineering Approach
+- Interactive 3D visualization of quantum circuits and states
+- AI-driven explanations adapted to user expertise level
+- Real quantum simulations using Amazon Braket
+- Multi-agent collaboration system for comprehensive analysis
+- Integration with real quantum hardware (IonQ QPU)
 
-### Architecture
+## Architecture
+
+The system follows a modular pipeline architecture:
+
 ```
-User Input → AgentCore Runtime → Quantum Circuit Parser → Braket Simulator → 3D Visualizer
-     ↓              ↓                    ↓                    ↓              ↓
+User Input → AgentCore Runtime → Circuit Parser → Braket Simulator → 3D Visualizer
+     ↓              ↓                    ↓              ↓              ↓
 Claude 3.5 → Memory/Gateway → Circuit Analysis → State Vectors → Plotly 3D
 ```
 
-### Multi-Region Design
-- **eu-central-1**: AgentCore Runtime, Bedrock models, S3 storage
-- **us-east-1**: Amazon Braket quantum processing, results storage
-- **Cross-region**: Optimized for global access and cost efficiency
+### Key Components
 
-### Technical Implementation
-- **AgentCore Integration**: Runtime, Memory, Gateway, Observability
-- **Quantum Pipeline**: Circuit parsing → Simulation → State analysis → Visualization
-- **AI Reasoning**: Multi-step analysis with Claude 3.5 Sonnet
-- **3D Rendering**: Real-time quantum state visualization with Plotly
-- **Cost Optimization**: Local development + cloud execution strategy
+**AgentCore Integration**
+- Runtime environment for AI agent orchestration
+- Memory management and gateway services
+- Real-time observability and monitoring
 
-## Live Demo
+**Quantum Processing Pipeline**
+- Circuit parsing for QASM, Qiskit, and Cirq formats
+- Simulation using Amazon Braket Local Simulator and QPU
+- State vector analysis and measurement processing
 
-Open these HTML files in your browser:
-- `quantumviz_bloch_sphere.html` - Interactive 3D Bloch sphere
-- `quantumviz_circuit_analysis.html` - Quantum circuit visualization
-- `quantumviz_teleportation.html` - Quantum teleportation animation
+**AI Reasoning Engine**
+- Multi-step analysis using Claude 3.5 Sonnet
+- Context-aware explanations based on user expertise
+- Educational content generation and adaptation
 
-## 🚀 WINNING ENHANCEMENTS - First Place Features
+**Visualization System**
+- Real-time 3D rendering with Plotly
+- Interactive Bloch sphere representations
+- Circuit diagram generation and animation
 
-### **🤖 Multi-Agent Collaboration System**
-- **Teacher Agent**: Educational explanations and assessments
-- **Debugger Agent**: Circuit analysis and error detection
-- **Optimizer Agent**: Performance enhancement and gate reduction
-- **Agent Orchestration**: Collaborative problem-solving
-- **Real-time Communication**: Agent-to-agent messaging
+## Features
 
-### **🔗 Real Quantum Hardware Integration**
-- **IonQ QPU**: Real quantum processing unit execution
-- **Hardware vs Simulator**: Fidelity comparison and analysis
-- **Production Readiness**: Actual quantum hardware deployment
-- **Bell States on QPU**: Real entanglement demonstration
-- **Hardware Capabilities**: Device-specific optimization
+### Multi-Agent Collaboration
+- Teacher Agent for educational content and assessments
+- Debugger Agent for circuit analysis and error detection
+- Optimizer Agent for performance enhancement
+- Coordinated problem-solving across specialized agents
 
-### **🎮 Gamified Learning Platform**
-- **Challenge System**: 4 difficulty levels with XP rewards
-- **Circuit Gallery**: Community sharing and remixing
-- **Leaderboards**: Competitive learning environment
-- **Achievement System**: 7+ achievements and badges
-- **Learning Paths**: Structured progression through concepts
+### Quantum Hardware Integration
+- Support for IonQ quantum processing units
+- Fidelity comparison between simulator and hardware
+- Real-time quantum state measurement
+- Hardware-specific circuit optimization
 
-### **🔍 AI-Powered Quantum Debugger**
-- **Error Detection**: 6 types of quantum circuit errors
-- **Optimization Suggestions**: Gate merging and circuit reduction
-- **AI Explanations**: Personalized debugging assistance
-- **Performance Analysis**: Complexity scoring and recommendations
-- **Learning Adaptation**: Level-appropriate feedback
+### Educational Platform
+- Gamified learning with challenge system
+- Community circuit gallery and sharing
+- Progress tracking and analytics
+- Structured learning paths
 
-### **📊 Analytics Dashboard for Educators**
-- **Student Progress Tracking**: Real-time learning analytics
-- **Concept Difficulty Analysis**: Identify struggling areas
-- **Engagement Metrics**: Time spent and activity patterns
-- **Personalized Recommendations**: AI-driven learning paths
-- **Class Analytics**: Group performance and insights
+### AI-Powered Debugging
+- Automatic error detection in quantum circuits
+- Optimization suggestions for gate reduction
+- Performance analysis and complexity scoring
+- Personalized debugging assistance
 
-### **🌐 Interactive Web Interface**
-- **Circuit Builder**: Drag-and-drop quantum gate interface
-- **Real-time Simulation**: Live quantum state updates  
-- **3D Visualizations**: Interactive Bloch spheres and circuit diagrams
-- **Educational Modules**: Step-by-step quantum learning
+### Analytics Dashboard
+- Student progress tracking for educators
+- Concept difficulty analysis
+- Engagement metrics and patterns
+- AI-driven learning recommendations
 
-### **🔌 REST API (15+ Endpoints)**
-- **Circuit Simulation**: `/api/circuit/simulate`
-- **Quantum Algorithms**: `/api/algorithms/grover`, `/api/algorithms/shor`
-- **3D Visualizations**: `/api/visualize/bloch`, `/api/visualize/circuit`
-- **AI Explanations**: `/api/ai/explain`
-- **Education Content**: `/api/education/modules`
+## REST API
 
-### **🧠 Advanced Quantum Algorithms**
-- **Grover's Search**: O(√N) quantum search algorithm
-- **Shor's Algorithm**: Integer factorization for cryptography
-- **VQE Optimization**: Variational quantum eigensolver
-- **Quantum Teleportation**: Quantum state transfer protocol
-- **Quantum Fourier Transform**: QFT implementation
+The platform provides a comprehensive REST API with the following endpoints:
 
-### **✅ Comprehensive Testing**
-- **Unit Tests**: Algorithm correctness verification
-- **Integration Tests**: AWS service connectivity
-- **Performance Tests**: Simulation benchmarks
-- **Visualization Tests**: 3D rendering accuracy
+**Circuit Operations**
+- `POST /api/circuit/simulate` - Simulate quantum circuits
+- `POST /api/visualize/bloch` - Generate Bloch sphere visualizations
+- `POST /api/visualize/circuit` - Create circuit diagrams
 
-## Quick Start
+**Quantum Algorithms**
+- `POST /api/algorithms/grover` - Grover's search algorithm
+- `POST /api/algorithms/shor` - Shor's factorization
+- `POST /api/algorithms/vqe` - Variational quantum eigensolver
 
+**AI Services**
+- `POST /api/ai/explain` - Get AI explanations of quantum concepts
+- `GET /api/education/modules` - Access educational content
+- `GET /api/education/module/<id>` - Retrieve specific learning modules
+
+**System**
+- `GET /api/health` - Health check endpoint
+
+All POST endpoints require API key authentication via the `X-API-Key` header.
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8 or higher
+- AWS account with Bedrock and Braket access
+- AWS CLI configured with appropriate credentials
+
+### Installation
+
+1. Clone the repository:
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run Web Interface (Interactive Circuit Builder)
-python src/web/app.py
-# Open http://localhost:5000
-
-# Run REST API
-python src/api/quantum_api.py  
-# API available at http://localhost:5001/api
-
-# Run Advanced Algorithms
-python src/algorithms/quantum_algorithms.py
-
-# Run Test Suite
-python tests/test_quantum_algorithms.py
-
-# Create 3D visualizations
-python src/visualization/simple_3d_viz.py
-
-# Test AWS integration
-python src/agent/aws_integration_test.py
+git clone https://github.com/yourusername/quantumviz-agent.git
+cd quantumviz-agent
 ```
 
-## Engineering Challenges Solved
+2. Create and activate a virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-### 1. Quantum State Visualization
-- **Problem**: Converting abstract quantum states to interactive 3D
-- **Solution**: Custom Plotly integration with real-time state updates
-- **Result**: Perfect Bell states (50% |00⟩, 50% |11⟩) visualized
+3. Install dependencies:
+```bash
+pip install -r src/requirements.txt
+```
 
-### 2. Multi-Region AWS Architecture
-- **Problem**: Quantum processing in us-east-1, AI in eu-central-1
-- **Solution**: Cross-region S3 sync + optimized data transfer
-- **Result**: 7/8 services operational, $0 spent
+4. Configure environment variables:
+```bash
+cp src/.env.example src/.env
+# Edit src/.env with your AWS credentials and configuration
+```
 
-### 3. AgentCore Integration
-- **Problem**: Complex quantum reasoning with AI agent
-- **Solution**: Custom prompt engineering + circuit analysis pipeline
-- **Result**: Agent DRC1I6SIWE (PREPARED) with quantum expertise
+5. Generate secure keys:
+```bash
+python3 -c "import secrets; print('API_KEY=' + secrets.token_hex(32))"
+python3 -c "import secrets; print('FLASK_SECRET_KEY=' + secrets.token_hex(32))"
+# Add these to your src/.env file
+```
 
-### 4. Cost Optimization
-- **Problem**: $100 budget for quantum + AI services
-- **Solution**: Local development + cloud execution strategy
-- **Result**: $0 spent, $100 remaining, full monitoring active
+### Running the Application
 
-## Results
+**Web Interface:**
+```bash
+./start_web.sh
+# Access at http://localhost:5000
+```
 
-- **Perfect Bell States**: 50% |00⟩, 50% |11⟩ entanglement
-- **AgentCore Agent**: DRC1I6SIWE (PREPARED)
-- **Cost**: $0 spent, $100 budget remaining
-- **AWS Integration**: 7/8 services operational
+**API Server:**
+```bash
+./start_api.sh
+# Access at http://localhost:5001
+```
 
-## Competition Highlights
+**Manual Start:**
+```bash
+source venv/bin/activate
+cd src
+python web/app.py  # or python api/quantum_api.py
+```
 
-- **Technical Excellence**: Full AgentCore integration with multi-region architecture
-- **Market Impact**: Addresses $850B quantum education barrier
-- **Innovation**: First AI agent for quantum education
-- **Cost Efficiency**: $0 spent with perfect budget control
+## Project Structure
 
-## Files
+```
+quantumviz-agent/
+├── src/
+│   ├── agent/              # AgentCore integration and AI services
+│   ├── agents/             # Multi-agent collaboration system
+│   ├── ai/                 # AI-powered debugging and optimization
+│   ├── algorithms/         # Quantum algorithm implementations
+│   ├── analytics/          # Educational analytics dashboard
+│   ├── api/                # REST API endpoints
+│   ├── demo/               # Demo scenarios and examples
+│   ├── gamification/       # Learning platform and challenges
+│   ├── hardware/           # Quantum hardware integration
+│   ├── quantum/            # Core quantum computing logic
+│   ├── sdk/                # SDK and integrations
+│   ├── visualization/      # 3D visualization engine
+│   ├── web/                # Web interface
+│   ├── config.py           # Configuration management
+│   └── requirements.txt    # Python dependencies
+├── venv/                   # Virtual environment
+├── start_api.sh            # API server startup script
+├── start_web.sh            # Web interface startup script
+└── README.md               # This file
+```
 
-- `src/agent/` - AgentCore integration
-- `src/quantum/` - Quantum computing logic  
-- `src/visualization/` - 3D visualization engine
-- `src/demo/` - Competition demo scenarios
-- `quantumviz_*.html` - Interactive visualizations
+## Security
+
+The application implements several security measures:
+
+- API key authentication for all POST endpoints
+- Secure session management with HttpOnly cookies
+- Input validation on all user inputs
+- Environment-based configuration for sensitive data
+- Comprehensive request logging and monitoring
+- IAM roles following principle of least privilege
+
+For detailed security information, see the security audit documentation in the `docs/` directory.
+
+## Configuration
+
+Key configuration options in `src/.env`:
+
+- `AWS_REGION` - AWS region for services (default: eu-central-1)
+- `AWS_ACCOUNT_ID` - Your AWS account ID
+- `AGENT_ID` - Bedrock Agent ID
+- `API_KEY` - API authentication key
+- `FLASK_SECRET_KEY` - Flask session secret
+- `FLASK_ENV` - Environment (development/production)
+- `S3_BUCKET_NAME` - S3 bucket for visualizations
+
+## Testing
+
+Run the test suite:
+```bash
+source venv/bin/activate
+python -m pytest tests/
+```
+
+Validate configuration:
+```bash
+python -c "from src.config import Config; Config.validate_config()"
+```
+
+## Contributing
+
+Contributions are welcome. Please ensure:
+
+- Code follows existing style and patterns
+- All tests pass before submitting
+- Security best practices are maintained
+- Documentation is updated as needed
+
+## License
+
+This project is part of the AWS AI Agent Global Hackathon.
+
+## Acknowledgments
+
+- Built using AWS Bedrock AgentCore
+- Quantum simulations powered by Amazon Braket
+- AI explanations generated by Claude 3.5 Sonnet
+- 3D visualizations created with Plotly

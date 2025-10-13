@@ -4,8 +4,10 @@ QuantumViz Agent - Web Interface
 Interactive quantum circuit builder with real-time visualization.
 """
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import json
+import os
+import secrets
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 import plotly.graph_objects as go
@@ -13,6 +15,12 @@ import plotly.utils
 import numpy as np
 
 app = Flask(__name__)
+# Set secret key for session management
+app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
+# Configure session
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV', 'production') == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 class QuantumCircuitBuilder:
     """Interactive quantum circuit builder."""
@@ -74,12 +82,29 @@ def index():
 @app.route('/api/add_gate', methods=['POST'])
 def add_gate():
     """Add quantum gate to circuit."""
-    data = request.json
-    gate_type = data['gate_type']
-    qubit = data['qubit']
-    target = data.get('target')
-    
     try:
+        data = request.json
+        
+        # Input validation
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'})
+        
+        gate_type = data.get('gate_type')
+        qubit = data.get('qubit')
+        target = data.get('target')
+        
+        # Validate gate type
+        valid_gates = ['H', 'X', 'Y', 'Z', 'CNOT', 'CZ', 'SWAP']
+        if gate_type not in valid_gates:
+            return jsonify({'status': 'error', 'message': f'Invalid gate type. Valid gates: {valid_gates}'})
+        
+        # Validate qubit indices
+        if not isinstance(qubit, int) or qubit < 0:
+            return jsonify({'status': 'error', 'message': 'Invalid qubit index'})
+        
+        if target is not None and (not isinstance(target, int) or target < 0):
+            return jsonify({'status': 'error', 'message': 'Invalid target qubit index'})
+        
         circuit_builder.add_gate(gate_type, qubit, target)
         return jsonify({'status': 'success', 'circuit': str(circuit_builder.circuit)})
     except Exception as e:
@@ -89,6 +114,10 @@ def add_gate():
 def simulate():
     """Run quantum simulation."""
     try:
+        # Validate circuit is not empty
+        if len(circuit_builder.circuit.instructions) == 0:
+            return jsonify({'status': 'error', 'message': 'No gates in circuit'})
+        
         counts = circuit_builder.run_simulation()
         visualization = circuit_builder.create_visualization(counts)
         return jsonify({
@@ -115,4 +144,6 @@ def circuit_info():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Only bind to all interfaces in development
+    host = '127.0.0.1' if os.getenv('FLASK_ENV', 'production') == 'production' else '0.0.0.0'
+    app.run(debug=os.getenv('FLASK_ENV', 'production') == 'development', host=host, port=5000)
