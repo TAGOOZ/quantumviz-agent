@@ -37,14 +37,53 @@ Open these HTML files in your browser:
 - `quantumviz_circuit_analysis.html` - Quantum circuit visualization
 - `quantumviz_teleportation.html` - Quantum teleportation animation
 
+## 🚀 Enhanced Project Features
+
+### **Interactive Web Interface**
+- **Circuit Builder**: Drag-and-drop quantum gate interface
+- **Real-time Simulation**: Live quantum state updates  
+- **3D Visualizations**: Interactive Bloch spheres and circuit diagrams
+- **Educational Modules**: Step-by-step quantum learning
+
+### **REST API**
+- **Circuit Simulation**: `/api/circuit/simulate`
+- **Quantum Algorithms**: `/api/algorithms/grover`, `/api/algorithms/shor`
+- **3D Visualizations**: `/api/visualize/bloch`, `/api/visualize/circuit`
+- **AI Explanations**: `/api/ai/explain`
+- **Education Content**: `/api/education/modules`
+
+### **Advanced Quantum Algorithms**
+- **Grover's Search**: Quantum search algorithm
+- **Shor's Algorithm**: Integer factorization
+- **VQE Optimization**: Variational quantum eigensolver
+- **Quantum Teleportation**: Quantum state transfer
+- **Quantum Fourier Transform**: QFT implementation
+
+### **Comprehensive Testing**
+- **Unit Tests**: Algorithm correctness
+- **Integration Tests**: AWS service connectivity
+- **Performance Tests**: Simulation benchmarks
+- **Visualization Tests**: 3D rendering accuracy
+
 ## Quick Start
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Run quantum simulation
-python src/quantum/first_circuit.py
+# Run Web Interface (Interactive Circuit Builder)
+python src/web/app.py
+# Open http://localhost:5000
+
+# Run REST API
+python src/api/quantum_api.py  
+# API available at http://localhost:5001/api
+
+# Run Advanced Algorithms
+python src/algorithms/quantum_algorithms.py
+
+# Run Test Suite
+python tests/test_quantum_algorithms.py
 
 # Create 3D visualizations
 python src/visualization/simple_3d_viz.py
