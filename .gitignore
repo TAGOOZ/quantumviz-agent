@@ -1,0 +1,71 @@
+# AWS Credentials - KEEP LOCAL
+rootkey.csv
+*.csv
+
+# Local Documentation - KEEP LOCAL
+overview.md
+aws_setup_guide.md
+quick_start.md
+implementation_plan.md
+technical_specifications.md
+architecture_diagram.txt
+aws_resources_plan.md
+development_timeline.md
+budget_monitoring.md
+project_summary.md
+day2_progress_summary.md
+progress_summary.md
+COMPETITION_SUBMISSION_GUIDE.md
+VIDEO_SCRIPT.md
+FINAL_PROJECT_SUMMARY.md
+
+# Python Virtual Environment
+quantumviz-env/
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary Files
+*.tmp
+*.temp
+
+# AWS Credentials
+.aws/
+aws-credentials.txt
+
+# Node Modules (if any)
+node_modules/
+
+# Build Files
+build/
+dist/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Local Development Files
+local_test.py
+test_*.py
+debug_*.py
