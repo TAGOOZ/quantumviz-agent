@@ -1,0 +1,59 @@
+{
+  "bell_state": {
+    "name": "Bell State (Quantum Entanglement)",
+    "description": "Creates a maximally entangled state between two qubits",
+    "circuit": {
+      "gates": [
+        {"type": "H", "qubit": 0},
+        {"type": "CNOT", "qubit": 0, "target": 1}
+      ]
+    },
+    "expected_results": {
+      "00": 0.5,
+      "11": 0.5
+    }
+  },
+  "superposition": {
+    "name": "Quantum Superposition",
+    "description": "Puts a single qubit into superposition",
+    "circuit": {
+      "gates": [
+        {"type": "H", "qubit": 0}
+      ]
+    },
+    "expected_results": {
+      "0": 0.5,
+      "1": 0.5
+    }
+  },
+  "ghz_state": {
+    "name": "GHZ State (3-Qubit Entanglement)",
+    "description": "Creates entanglement across three qubits",
+    "circuit": {
+      "gates": [
+        {"type": "H", "qubit": 0},
+        {"type": "CNOT", "qubit": 0, "target": 1},
+        {"type": "CNOT", "qubit": 1, "target": 2}
+      ]
+    },
+    "expected_results": {
+      "000": 0.5,
+      "111": 0.5
+    }
+  },
+  "quantum_teleportation": {
+    "name": "Quantum Teleportation",
+    "description": "Demonstrates quantum state transfer protocol",
+    "circuit": {
+      "gates": [
+        {"type": "H", "qubit": 1},
+        {"type": "CNOT", "qubit": 1, "target": 2},
+        {"type": "CNOT", "qubit": 0, "target": 1},
+        {"type": "H", "qubit": 0}
+      ]
+    },
+    "expected_results": {
+      "varies": "State transferred to qubit 2"
+    }
+  }
+}
