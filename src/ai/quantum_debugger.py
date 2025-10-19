@@ -37,7 +37,8 @@ class QuantumDebugger:
         self.region = region
         self.bedrock_client = boto3.client('bedrock-runtime', region_name=region)
         self.debug_history = []
-        self.optimization_rules = self._load_optimization_rules()
+        self.max_history_size = 100  # Keep last 100 debug sessions
+    self.optimization_rules = self._load_optimization_rules()
         
     def _load_optimization_rules(self) -> Dict[str, Any]:
         """Load quantum circuit optimization rules."""
@@ -97,13 +98,17 @@ class QuantumDebugger:
         debug_score = self._calculate_debug_score(circuit_analysis, errors, optimizations)
         debug_results["debug_score"] = debug_score
         
-        # Store in history
+        # Store in history and cleanup old entries
         self.debug_history.append({
-            "circuit": circuit,
-            "results": debug_results,
-            "timestamp": self._get_timestamp()
+        "circuit": circuit,
+        "results": debug_results,
+        "timestamp": self._get_timestamp()
         })
-        
+
+        # Keep only the most recent entries
+        if len(self.debug_history) > self.max_history_size:
+            self.debug_history = self.debug_history[-self.max_history_size:]
+
         return debug_results
     
     async def _analyze_circuit_structure(self, circuit: Dict[str, Any]) -> Dict[str, Any]:

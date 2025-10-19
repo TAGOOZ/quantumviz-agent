@@ -10,6 +10,8 @@ import asyncio
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
+import uuid
+from datetime import datetime
 
 class AgentRole(Enum):
     TEACHER = "teacher"
@@ -28,21 +30,45 @@ class AgentMessage:
     priority: int = 1
 
 class QuantumAgent:
-    """Base class for all quantum agents."""
+    """Base class for all quantum agents following AWS Bedrock Agent patterns."""
     
     def __init__(self, agent_id: str, role: AgentRole, region: str = "eu-central-1"):
         self.agent_id = agent_id
         self.role = role
         self.region = region
         self.bedrock_client = boto3.client('bedrock-runtime', region_name=region)
+        self.bedrock_agent_client = boto3.client('bedrock-agent', region_name=region)
+        self.bedrock_agent_runtime = boto3.client('bedrock-agent-runtime', region_name=region)
         self.memory = {}
         self.capabilities = []
+        self.action_groups = []
+        self.knowledge_bases = []
+        self.session_id = str(uuid.uuid4())
         
-    async def process_message(self, message: AgentMessage) -> AgentMessage:
-        """Process incoming message and generate response."""
-        raise NotImplementedError
+    def add_action_group(self, action_group_name: str, description: str, functions: List[Dict[str, Any]]):
+        """Add action group following AWS Bedrock Agent patterns."""
+        self.action_groups.append({
+            "actionGroupName": action_group_name,
+            "description": description,
+            "functions": functions,
+            "actionGroupExecutor": {
+                "lambda": f"arn:aws:lambda:{self.region}:*:function:quantum-{self.role.value}-{action_group_name}"
+            }
+        })
         
-    async def collaborate(self, other_agents: List['QuantumAgent'], task: Dict[str, Any]) -> Dict[str, Any]:
+    def add_knowledge_base(self, kb_id: str, description: str):
+        """Add knowledge base integration."""
+        self.knowledge_bases.append({
+            "knowledgeBaseId": kb_id,
+            "description": description,
+            "knowledgeBaseState": "ENABLED"
+        })
+        
+    async def invoke_agent(self, input_text: str, session_attributes: Dict[str, str] = None) -> Dict[str, Any]:
+        """Invoke AWS Bedrock Agent following proper patterns."""
+        try:
+            response = self.bedrock_agent_runtime.invoke_agent(
+                agentId=self.agent_er_agents: List['QuantumAgent'], task: Dict[str, Any]) -> Dict[str, Any]:
         """Collaborate with other agents on a task."""
         raise NotImplementedError
 

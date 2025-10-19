@@ -3,77 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuantumViz Agent - Interactive Circuit Builder</title>
+    <title>QuantumViz Agent - Quantum Circuit Builder</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 30px; }
-        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .circuit-builder { border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-        .gates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .gate-btn { padding: 10px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
-        .gate-btn:hover { background: #0056b3; }
-        .circuit-display { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; min-height: 100px; }
-        .controls { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .btn-primary { background: #28a745; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .results { border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-        .visualization { height: 400px; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'JetBrains Mono', monospace; background: #000000; color: #FFFFFF; padding: 16px; min-height: 100vh; }
+        .main-container { border: 2px solid #FFFFFF; padding: 16px; max-width: 1728px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #FFFFFF; }
+        .logo { font-size: 14px; line-height: 18px; white-space: pre; }
+        .about-card { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+        .about-row { display: flex; gap: 8px; }
+        .about-label { color: #FFFFFF; width: 90px; }
+        .about-value { color: #A4A4A4; }
+        .nav-tabs { display: flex; gap: 24px; font-size: 14px; }
+        .nav-tab { color: #A4A4A4; text-decoration: none; cursor: pointer; transition: color 0.2s; }
+        .nav-tab:hover, .nav-tab.active { color: #FFFFFF; }
+        .content-grid { display: grid; grid-template-columns: 1fr 429px; gap: 24px; margin-bottom: 24px; }
+        .circuit-section { background: #000000; border: 1px solid #FFFFFF; padding: 16px; }
+        .section-title { color: #FFDDC0; font-size: 14px; margin-bottom: 16px; }
+        .gates-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+        .gate-btn { background: #323232; border: 1px solid #FFFFFF; color: #FFFFFF; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .gate-btn:hover { background: #FFFFFF; color: #000000; }
+        .circuit-display { background: #000000; border: 1px solid #A4A4A4; padding: 16px; font-size: 12px; min-height: 200px; margin-bottom: 16px; overflow-x: auto; color: #A4A4A4; }
+        .circuit-display pre { margin: 0; color: #FFFFFF; }
+        .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 14px; border: 1px solid #FFFFFF; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #FFFFFF; color: #000000; }
+        .btn-primary:hover { background: #C3C7F4; }
+        .btn-secondary { background: #323232; color: #FFFFFF; }
+        .btn-secondary:hover { background: #FFFFFF; color: #000000; }
+        .btn-danger { background: #000000; color: #FFFFFF; border-color: #A4A4A4; }
+        .btn-danger:hover { background: #A4A4A4; color: #000000; }
+        .results-panel { background: #212121; border: 1px solid #FFFFFF; padding: 16px; }
+        .results-panel .section-title { margin-bottom: 16px; }
+        .visualization { height: 400px; margin-bottom: 16px; }
+        .results-text { font-size: 14px; color: #FFFFFF; }
+        .results-text ul { list-style: none; padding: 0; }
+        .results-text li { padding: 4px 0; color: #A4A4A4; }
+        .results-text h4 { color: #FFDDC0; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+        .status { padding: 12px; margin: 12px 0; border: 1px solid; font-size: 14px; }
+        .status.success { background: #000000; color: #00FF00; border-color: #00FF00; }
+        .status.error { background: #000000; color: #FF0000; border-color: #FF0000; }
+        .footer { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #FFFFFF; font-size: 14px; color: #A4A4A4; }
+        .footer-left { display: flex; gap: 14px; align-items: center; }
+        .footer-divider { width: 1px; height: 14px; background: #FFFFFF; }
+        .help-text { color: #FFFFFF; }
+        .help-command { color: #FFDDC0; }
+        .samples-section { margin-bottom: 16px; }
+        .samples-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .sample-btn { background: #000000; border: 1px solid #A4A4A4; color: #C3C7F4; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .sample-btn:hover { border-color: #FFFFFF; color: #FFFFFF; }
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="main-container">
         <div class="header">
-            <h1>🚀 QuantumViz Agent</h1>
-            <p>Interactive Quantum Circuit Builder with Real-time Visualization</p>
+            <div style="display: flex; gap: 49px; align-items: flex-start;">
+                <div class="logo">  ___                   _               
+ / _ \                 | |              
+| | | |_   _  __ _ _ __ | |_ _   _ _ __ 
+| | | | | | |/ _` | '_ \| __| | | | '_ \
+| |_| | |_| | (_| | | | | |_| |_| | | | |
+ \___/ \__,_|\__,_|_| |_|\__|\__,_|_| |_|
+                                         
+ \   / (_)  ____                         
+  \ /   _  |_  /                         
+   V   | |  / /                          
+   |   | | /___|                         
+   |_  |_|                               </div>
+                <div class="about-card">
+                    <div class="about-row">
+                        <span class="about-label">Project</span>
+                        <span class="about-value">QuantumViz Agent</span>
+                    </div>
+                    <div class="about-row">
+                        <span class="about-label">Purpose</span>
+                        <span class="about-value">Quantum Circuit Builder</span>
+                    </div>
+                    <div class="about-row">
+                        <span class="about-label">Framework</span>
+                        <span class="about-value">Amazon Braket</span>
+                    </div>
+                    <div class="about-row">
+                        <span class="about-label">AI Engine</span>
+                        <span class="about-value">AWS Bedrock</span>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-tabs">
+                <span class="nav-tab active">Circuit Builder</span>
+                <span class="nav-tab">Algorithms</span>
+                <span class="nav-tab">Documentation</span>
+            </div>
         </div>
-        
-        <div class="main-content">
-            <div class="circuit-builder">
-                <h3>Quantum Circuit Builder</h3>
+
+        <div class="content-grid">
+            <div class="circuit-section">
+                <div class="section-title"># Quantum Circuit Builder</div>
                 
-                <div class="gates">
-                    <button class="gate-btn" onclick="addGate('H', 0)">H (Hadamard)</button>
-                    <button class="gate-btn" onclick="addGate('X', 0)">X (Pauli-X)</button>
-                    <button class="gate-btn" onclick="addGate('Y', 0)">Y (Pauli-Y)</button>
-                    <button class="gate-btn" onclick="addGate('Z', 0)">Z (Pauli-Z)</button>
-                    <button class="gate-btn" onclick="addGate('CNOT', 0, 1)">CNOT</button>
-                    <button class="gate-btn" onclick="addGate('CZ', 0, 1)">CZ</button>
-                    <button class="gate-btn" onclick="addGate('SWAP', 0, 1)">SWAP</button>
-                    <button class="gate-btn" onclick="addGate('T', 0)">T</button>
+                <div class="samples-section">
+                    <div style="color: #A4A4A4; font-size: 12px; margin-bottom: 8px;">Load Sample Circuit:</div>
+                    <div class="samples-grid">
+                        <button class="sample-btn" onclick="loadSample('bell')">Bell State (Entanglement)</button>
+                        <button class="sample-btn" onclick="loadSample('superposition')">Superposition</button>
+                        <button class="sample-btn" onclick="loadSample('ghz')">GHZ State (3-Qubit)</button>
+                        <button class="sample-btn" onclick="loadSample('teleport')">Quantum Teleportation</button>
+                    </div>
+                </div>
+
+                <div style="color: #A4A4A4; font-size: 12px; margin-bottom: 8px;">Qubit Selection:</div>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <select id="qubit-select" style="background: #323232; border: 1px solid #FFFFFF; color: #FFFFFF; padding: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+                        <option value="0">Qubit 0</option>
+                        <option value="1">Qubit 1</option>
+                        <option value="2">Qubit 2</option>
+                        <option value="3">Qubit 3</option>
+                    </select>
+                    <select id="target-select" style="background: #323232; border: 1px solid #FFFFFF; color: #FFFFFF; padding: 8px; font-family: 'JetBrains Mono', monospace; font-size: 14px;">
+                        <option value="">No Target</option>
+                        <option value="0">Target: Qubit 0</option>
+                        <option value="1">Target: Qubit 1</option>
+                        <option value="2">Target: Qubit 2</option>
+                        <option value="3">Target: Qubit 3</option>
+                    </select>
+                </div>
+
+                <div style="color: #A4A4A4; font-size: 12px; margin-bottom: 8px;">Available Quantum Gates:</div>
+                <div class="gates-grid">
+                    <button class="gate-btn" onclick="addGateWithSelection('H')" title="Hadamard (H key)">H</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('X')" title="Pauli-X (X key)">X</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('Y')" title="Pauli-Y (Y key)">Y</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('Z')" title="Pauli-Z (Z key)">Z</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('CNOT')" title="CNOT (C key)">CNOT</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('CZ')" title="CZ">CZ</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('SWAP')" title="SWAP">SWAP</button>
+                    <button class="gate-btn" onclick="addGateWithSelection('T')" title="T Gate">T</button>
                 </div>
                 
+                <div style="color: #A4A4A4; font-size: 12px; margin-bottom: 8px;">Current Circuit:</div>
                 <div class="circuit-display" id="circuit-display">
-                    <p>No gates added yet. Click a gate button to start building your circuit.</p>
+                    <p>$ quantum-circuit --init</p>
+                    <p style="color: #A4A4A4;">No gates added. Use buttons above or load a sample circuit.</p>
                 </div>
                 
                 <div class="controls">
-                    <button class="btn btn-primary" onclick="simulate()">Run Simulation</button>
-                    <button class="btn btn-secondary" onclick="getCircuitInfo()">Circuit Info</button>
-                    <button class="btn btn-danger" onclick="reset()">Reset Circuit</button>
+                    <button class="btn btn-primary" onclick="simulate()">RUN SIMULATION</button>
+                    <button class="btn btn-secondary" onclick="getAIExplanation()" id="ai-btn">AI Explain</button>
+                    <button class="btn btn-secondary" onclick="saveToS3()" id="s3-btn">Save to S3</button>
+                    <button class="btn btn-secondary" onclick="exportCircuit()">Export</button>
+                    <button class="btn btn-secondary" onclick="undoGate()">Undo</button>
+                    <button class="btn btn-danger" onclick="reset()">Reset</button>
+                </div>
+                
+                <div style="color: #A4A4A4; font-size: 11px; margin-top: 12px; padding: 8px; border: 1px solid #323232;">
+                    <div style="color: #FFDDC0; margin-bottom: 4px;">Keyboard Shortcuts:</div>
+                    <div>H, X, Y, Z - Add gates | C - CNOT | R - Run | U - Undo | Esc - Reset</div>
                 </div>
                 
                 <div id="status"></div>
             </div>
             
-            <div class="results">
-                <h3>Simulation Results</h3>
+            <div class="results-panel">
+                <div class="section-title"># Simulation Results</div>
+                
+                <div id="aws-status" style="margin-bottom: 12px; padding: 8px; border: 1px solid #323232; font-size: 12px;">
+                    <span style="color: #A4A4A4;">AWS Status: </span>
+                    <span id="aws-indicator" style="color: #FFFF00;">Checking...</span>
+                </div>
+                
+                <div id="ai-explanation-panel" style="display: none; margin-bottom: 16px; padding: 12px; border: 1px solid #00FF00; background: #001100;">
+                    <div style="color: #FFDDC0; font-size: 12px; margin-bottom: 8px;">🤖 AI Circuit Analysis:</div>
+                    <div id="ai-explanation-text" style="color: #00FF00; font-size: 12px; line-height: 1.6; white-space: pre-wrap;"></div>
+                </div>
+                
+                <div id="s3-link-panel" style="display: none; margin-bottom: 16px; padding: 12px; border: 1px solid #C3C7F4;">
+                    <div style="color: #FFDDC0; font-size: 12px; margin-bottom: 8px;">Saved to S3:</div>
+                    <a id="s3-link" href="#" target="_blank" style="color: #C3C7F4; font-size: 12px; word-break: break-all;"></a>
+                </div>
+                
+                <div id="stats-panel" style="display: none; margin-bottom: 16px; padding: 12px; border: 1px solid #323232;">
+                    <div style="color: #FFDDC0; font-size: 12px; margin-bottom: 8px;">Circuit Statistics:</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+                        <div>Gates: <span id="stat-gates" style="color: #00FF00;">0</span></div>
+                        <div>Qubits: <span id="stat-qubits" style="color: #00FF00;">0</span></div>
+                        <div>Depth: <span id="stat-depth" style="color: #00FF00;">0</span></div>
+                        <div>Shots: <span id="stat-shots" style="color: #00FF00;">1024</span></div>
+                    </div>
+                </div>
+                
                 <div id="visualization" class="visualization"></div>
-                <div id="results-text"></div>
+                <div id="results-text" class="results-text"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-left">
+                <span>QuantumViz Agent</span>
+                <div class="footer-divider"></div>
+                <span id="time">00:00</span>
+                <div class="footer-divider"></div>
+                <span>AWS Hackathon 2025</span>
+            </div>
+            <div class="help-text">
+                <span class="help-command">:help</span> for commands
             </div>
         </div>
     </div>
 
     <script>
+        // Circuit history for undo
+        let circuitHistory = [];
+        
+        // Update time in footer
+        function updateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('time').textContent = `${hours}:${minutes}`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Check AWS status on load
+        fetch('/api/aws_status')
+        .then(response => response.json())
+        .then(data => {
+            const indicator = document.getElementById('aws-indicator');
+            if (data.aws_available) {
+                indicator.textContent = `Connected (${data.region})`;
+                indicator.style.color = '#00FF00';
+            } else {
+                indicator.textContent = 'Offline (Local Mode)';
+                indicator.style.color = '#FF0000';
+                document.getElementById('ai-btn').disabled = true;
+                document.getElementById('s3-btn').disabled = true;
+                document.getElementById('ai-btn').style.opacity = '0.5';
+                document.getElementById('s3-btn').style.opacity = '0.5';
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Don't trigger if typing in input/select
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            
+            const key = e.key.toLowerCase();
+            switch(key) {
+                case 'h': addGateWithSelection('H'); break;
+                case 'x': addGateWithSelection('X'); break;
+                case 'y': addGateWithSelection('Y'); break;
+                case 'z': addGateWithSelection('Z'); break;
+                case 'c': addGateWithSelection('CNOT'); break;
+                case 'r': simulate(); break;
+                case 'u': undoGate(); break;
+                case 'escape': reset(); break;
+            }
+        });
+
         function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        const statusDiv = document.getElementById('status');
+        const safeMessage = message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeType = type.replace(/[^a-zA-Z0-9-_]/g, '');
+        statusDiv.innerHTML = `<div class="status ${safeType}">$ ${safeMessage}</div>`;
+        setTimeout(() => {
+        statusDiv.innerHTML = '';
+        }, 5000);
+        }
+
+        // Safe function to update circuit display
+        function updateCircuitDisplay(statusMessage, circuitText) {
+            const display = document.getElementById('circuit-display');
+            const safeStatus = statusMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeCircuit = circuitText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            display.innerHTML = `<p style="color: #00FF00;">$ ${safeStatus}</p><pre>${safeCircuit}</pre>`;
+        }
+
+        function loadSample(sampleType) {
+            // Reset first
+            fetch('/api/reset', { method: 'POST' })
+            .then(() => {
+                const samples = {
+                    'bell': [
+                        { type: 'H', qubit: 0 },
+                        { type: 'CNOT', qubit: 0, target: 1 }
+                    ],
+                    'superposition': [
+                        { type: 'H', qubit: 0 }
+                    ],
+                    'ghz': [
+                        { type: 'H', qubit: 0 },
+                        { type: 'CNOT', qubit: 0, target: 1 },
+                        { type: 'CNOT', qubit: 1, target: 2 }
+                    ],
+                    'teleport': [
+                        { type: 'H', qubit: 1 },
+                        { type: 'CNOT', qubit: 1, target: 2 },
+                        { type: 'CNOT', qubit: 0, target: 1 },
+                        { type: 'H', qubit: 0 }
+                    ]
+                };
+                
+                const gates = samples[sampleType];
+                if (gates) {
+                    let promise = Promise.resolve();
+                    gates.forEach(gate => {
+                        promise = promise.then(() => 
+                            fetch('/api/add_gate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    gate_type: gate.type, 
+                                    qubit: gate.qubit, 
+                                    target: gate.target 
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                            if (data.status === 'success') {
+                            updateCircuitDisplay(`loaded sample: ${sampleType}`, data.circuit);
+                            }
+                            })
+                        );
+                    });
+                    promise.then(() => {
+                        showStatus(`Loaded ${sampleType} circuit`, 'success');
+                    });
+                }
+            });
+        }
+
+        function addGateWithSelection(gateType) {
+            const qubit = parseInt(document.getElementById('qubit-select').value);
+            const targetSelect = document.getElementById('target-select').value;
+            const target = targetSelect ? parseInt(targetSelect) : null;
+            addGate(gateType, qubit, target);
         }
 
         function addGate(gateType, qubit, target = null) {
@@ -84,14 +351,75 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('circuit-display').innerHTML = 
-                        `<pre>${data.circuit}</pre>`;
-                    showStatus('Gate added successfully!', 'success');
-                } else {
-                    showStatus(`Error: ${data.message}`, 'error');
-                }
+            if (data.status === 'success') {
+            // Save to history for undo
+            circuitHistory.push({ type: gateType, qubit: qubit, target: target });
+
+            const gateMessage = `gate added: ${gateType} on qubit ${qubit}${target !== null ? ` (target: ${target})` : ''}`;
+            updateCircuitDisplay(gateMessage, data.circuit);
+            showStatus(`Added ${gateType} gate`, 'success');
+            } else {
+            showStatus(`Error: ${data.message}`, 'error');
+            }
             });
+        }
+        
+        function undoGate() {
+            if (circuitHistory.length === 0) {
+                showStatus('Nothing to undo', 'error');
+                return;
+            }
+            
+            circuitHistory.pop();
+            
+            // Rebuild circuit from history
+            fetch('/api/reset', { method: 'POST' })
+            .then(() => {
+                if (circuitHistory.length === 0) {
+                    document.getElementById('circuit-display').innerHTML = 
+                        '<p>$ quantum-circuit --init</p><p style="color: #A4A4A4;">No gates added.</p>';
+                    showStatus('Undo complete', 'success');
+                    return;
+                }
+                
+                let promise = Promise.resolve();
+                circuitHistory.forEach(gate => {
+                    promise = promise.then(() => 
+                        fetch('/api/add_gate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                gate_type: gate.type, 
+                                qubit: gate.qubit, 
+                                target: gate.target 
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                        if (data.status === 'success') {
+                        updateCircuitDisplay('undo complete', data.circuit);
+                        }
+                        })
+                    );
+                });
+                promise.then(() => {
+                    showStatus('Undo complete', 'success');
+                });
+            });
+        }
+        
+        function exportCircuit() {
+            const circuitText = document.getElementById('circuit-display').innerText;
+            const blob = new Blob([circuitText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quantum-circuit-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showStatus('Circuit exported', 'success');
         }
 
         function simulate() {
@@ -100,21 +428,34 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
+                    // Show stats panel
+                    document.getElementById('stats-panel').style.display = 'block';
+                    document.getElementById('stat-gates').textContent = data.gates || circuitHistory.length;
+                    document.getElementById('stat-qubits').textContent = data.qubit_count || 2;
+                    document.getElementById('stat-depth').textContent = data.circuit_depth || circuitHistory.length;
+                    
                     // Display results
                     const resultsText = document.getElementById('results-text');
                     let html = '<h4>Measurement Results:</h4><ul>';
                     for (const [state, count] of Object.entries(data.results)) {
-                        const probability = (count / 1024 * 100).toFixed(1);
-                        html += `<li>|${state}⟩: ${count} times (${probability}%)</li>`;
+                        const safeState = state.replace(/[^0-9|]/g, '');
+                        const safeCount = String(count).replace(/[^0-9]/g, '');
+                        const probability = (parseInt(safeCount) / 1024 * 100).toFixed(1);
+                        html += `<li>|${safeState}⟩: ${safeCount} shots (${probability}%)</li>`;
                     }
                     html += '</ul>';
                     resultsText.innerHTML = html;
                     
-                    // Display visualization
+                    // Display visualization with dark theme
                     const plotData = JSON.parse(data.visualization);
+                    plotData.layout.paper_bgcolor = '#212121';
+                    plotData.layout.plot_bgcolor = '#212121';
+                    plotData.layout.font = { color: '#FFFFFF', family: 'JetBrains Mono' };
+                    plotData.layout.xaxis = { ...plotData.layout.xaxis, gridcolor: '#323232' };
+                    plotData.layout.yaxis = { ...plotData.layout.yaxis, gridcolor: '#323232' };
                     Plotly.newPlot('visualization', plotData.data, plotData.layout);
                     
-                    showStatus('Simulation completed successfully!', 'success');
+                    showStatus('Simulation completed', 'success');
                 } else {
                     showStatus(`Error: ${data.message}`, 'error');
                 }
@@ -125,7 +466,7 @@
             fetch('/api/circuit_info')
             .then(response => response.json())
             .then(data => {
-                showStatus(`Circuit Info: ${data.qubits} qubits, ${data.gates} gates`, 'success');
+                showStatus(`${data.qubits} qubits, ${data.gates} gates`, 'success');
             });
         }
 
@@ -133,11 +474,88 @@
             fetch('/api/reset', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('circuit-display').innerHTML = 
-                    '<p>Circuit reset. Click a gate button to start building.</p>';
+                circuitHistory = []; // Clear history
+                document.getElementById('circuit-display').innerHTML =
+                '<p>$ quantum-circuit --init</p><p style="color: #A4A4A4;">No gates added. Use buttons above or load a sample circuit.</p>';
                 document.getElementById('results-text').innerHTML = '';
                 document.getElementById('visualization').innerHTML = '';
-                showStatus('Circuit reset successfully!', 'success');
+                document.getElementById('ai-explanation-panel').style.display = 'none';
+                document.getElementById('s3-link-panel').style.display = 'none';
+                document.getElementById('stats-panel').style.display = 'none';
+                showStatus('Circuit reset', 'success');
+            });
+        }
+        
+        function getAIExplanation() {
+            showStatus('Analyzing circuit with AI...', 'success');
+            document.getElementById('ai-explanation-panel').style.display = 'block';
+            document.getElementById('ai-explanation-text').innerHTML = '<span style="color: #FFFF00;">Loading explanation from AWS Bedrock...</span>';
+            
+            fetch('/api/ai/explain', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                document.getElementById('ai-explanation-text').textContent = data.explanation;
+                showStatus('AI explanation received', 'success');
+                } else {
+                const safeMessage = data.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                document.getElementById('ai-explanation-text').innerHTML =
+                    `<span style="color: #FF0000;">${safeMessage}</span>`;
+                    showStatus('AI explanation failed', 'error');
+                }
+            })
+            .catch(error => {
+            const safeError = error.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            document.getElementById('ai-explanation-text').innerHTML =
+                `<span style="color: #FF0000;">Error: ${safeError}</span>`;
+                showStatus('AI explanation failed', 'error');
+            });
+        }
+        
+        function saveToS3() {
+            const circuitHtml = document.getElementById('circuit-display').innerHTML;
+            const resultsHtml = document.getElementById('results-text').innerHTML;
+            
+            const fullHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quantum Circuit Visualization</title>
+    <style>
+        body { font-family: 'JetBrains Mono', monospace; background: #000; color: #FFF; padding: 20px; }
+        .circuit { border: 1px solid #FFF; padding: 20px; margin-bottom: 20px; }
+        .results { border: 1px solid #FFF; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>QuantumViz Agent - Circuit Visualization</h1>
+    <div class="circuit">${circuitHtml}</div>
+    <div class="results">${resultsHtml}</div>
+    <p>Generated by QuantumViz Agent - AWS AI Agent Global Hackathon</p>
+</body>
+</html>`;
+            
+            showStatus('Uploading to S3...', 'success');
+            
+            fetch('/api/save_to_s3', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ html: fullHtml })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('s3-link-panel').style.display = 'block';
+                    const link = document.getElementById('s3-link');
+                    link.href = data.url;
+                    link.textContent = data.url;
+                    showStatus('Saved to S3 successfully', 'success');
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus(`S3 upload failed: ${error.message}`, 'error');
             });
         }
     </script>
