@@ -5,6 +5,8 @@ venv/
 requirements.txt
 *.pyc
 __pycache__/
+quantumviz-env/
+tests/
 
 # Keep only frontend files
 !dist/
