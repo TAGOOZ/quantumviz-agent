@@ -237,9 +237,14 @@
         setInterval(updateTime, 1000);
         
         // Check backend status on load
+        console.log('Checking backend at:', API_BASE_URL);
         fetch(`${API_BASE_URL}/api/health`)
-        .then(response => response.json())
+        .then(response => {
+            console.log('Health check response:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Health check data:', data);
             const indicator = document.getElementById('aws-indicator');
             if (data.status === 'healthy') {
                 indicator.textContent = `Connected (${data.service})`;
@@ -250,8 +255,9 @@
             }
         })
         .catch(error => {
+            console.error('Backend connection error:', error);
             const indicator = document.getElementById('aws-indicator');
-            indicator.textContent = 'Backend Offline';
+            indicator.textContent = 'Backend Offline (CORS Error)';
             indicator.style.color = '#FF0000';
         });
         
@@ -353,13 +359,18 @@
         }
 
         function addGate(gateType, qubit, target = null) {
+            console.log('Adding gate:', gateType, 'qubit:', qubit, 'target:', target);
             fetch(`${API_BASE_URL}/api/add_gate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gate_type: gateType, qubit: qubit, target: target })
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Add gate response:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('Add gate data:', data);
                 if (data.status === 'success') {
                     // Save to history for undo
                     circuitHistory.push({ type: gateType, qubit: qubit, target: target });
@@ -370,6 +381,10 @@
                 } else {
                     showStatus(`Error: ${data.message}`, 'error');
                 }
+            })
+            .catch(error => {
+                console.error('Add gate error:', error);
+                showStatus(`Network Error: ${error.message}`, 'error');
             });
         }
         

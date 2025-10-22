@@ -5,6 +5,7 @@ Interactive quantum circuit builder with real-time visualization.
 """
 
 from flask import Flask, render_template, request, jsonify, session
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import json
@@ -167,6 +168,11 @@ def validate_circuit_input(data):
     return data
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app, origins=["*"], methods=["GET", "POST", "OPTIONS"], 
+     allow_headers=["Content-Type", "Authorization"])
+
 # Set secret key for session management
 app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
 # Configure session
