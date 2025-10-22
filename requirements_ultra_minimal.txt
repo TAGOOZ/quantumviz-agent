@@ -1,0 +1,7 @@
+# Ultra minimal for demo - guaranteed to work
+flask==2.3.3
+flask-cors==4.0.0
+numpy==1.24.4
+plotly==5.17.0
+requests==2.31.0
+python-dotenv==1.0.0
