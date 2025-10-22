@@ -78,3 +78,27 @@ build/
 local_test.py
 test_*.py
 debug_*.py
+
+# Demo and Video Files - KEEP LOCAL
+*.mp4
+*.mp3
+*.avi
+*.mov
+*.webm
+quantumviz_final_demo.*
+*demo*.mp4
+*demo*.mp3
+run_demo.sh
+timed_demo_script.py
+mix_audio_video.sh
+quick_mix.sh
+
+# Voice Over and YouTube Content - KEEP LOCAL
+voice_over_script.md
+elevenlabs_script.txt
+youtube_content.md
+
+# Test and Visualization Files - KEEP LOCAL
+test_visualization.json
+bloch_sphere.html
+quantumviz_*.html
