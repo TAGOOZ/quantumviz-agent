@@ -69,7 +69,7 @@ node_modules/
 
 # Build Files
 build/
-dist/
+# dist/ - Keep dist for Netlify deployment
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints/
