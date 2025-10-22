@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "QuantumViz Agent - Interactive Quantum Circuit Builder",
   "scripts": {
-    "build": "mkdir -p dist && cp src/web/templates/index.html dist/ && cp -r static/* dist/ 2>/dev/null || true",
+    "build": "echo 'Static files already in dist/'",
     "dev": "python -m http.server 3000 --directory dist",
     "start": "npm run build && npm run dev"
   },
