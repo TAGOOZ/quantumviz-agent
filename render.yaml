@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: quantumviz-agent-api
+    env: python
+    buildCommand: "pip install -r src/requirements.txt"
+    startCommand: "cd src && python web/app.py"
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: AWS_REGION
+        value: us-east-1
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/health

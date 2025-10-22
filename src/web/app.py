@@ -21,11 +21,17 @@ import numpy as np
 import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
-import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Import Google Generative AI after environment variables are loaded
+try:
+    import google.generativeai as genai
+    GEMINI_IMPORTED = True
+except ImportError:
+    GEMINI_IMPORTED = False
 
 # Add parent directory to path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -55,6 +61,68 @@ def retry_on_failure(max_attempts=3, backoff_factor=1.0):
             raise last_exception
         return wrapper
     return decorator
+
+
+def _extract_gemini_text(response):
+    if getattr(response, "text", None):
+        return response.text
+    parts = []
+    for candidate in getattr(response, "candidates", []) or []:
+        content = getattr(candidate, "content", None)
+        if not content:
+            continue
+        for part in getattr(content, "parts", []):
+            text = getattr(part, "text", None)
+            if text:
+                parts.append(text)
+    if parts:
+        return "\n".join(parts).strip()
+    raise Exception("Empty response from Gemini")
+
+
+def _extract_openai_text(payload):
+    choices = payload.get('choices') if isinstance(payload, dict) else None
+    if isinstance(choices, list) and choices:
+        first = choices[0]
+        if isinstance(first, dict):
+            text_field = first.get('text')
+            if isinstance(text_field, str) and text_field.strip():
+                return text_field
+            message = first.get('message')
+            if isinstance(message, dict):
+                content = message.get('content')
+                if isinstance(content, str) and content.strip():
+                    return content
+                if isinstance(content, list):
+                    parts = [part.get('text') for part in content if isinstance(part, dict) and part.get('text')]
+                    if parts:
+                        return "\n".join(parts).strip()
+    text = payload.get('text') if isinstance(payload, dict) else None
+    if isinstance(text, str) and text.strip():
+        return text
+    output_text = payload.get('outputText') if isinstance(payload, dict) else None
+    if isinstance(output_text, str) and output_text.strip():
+        return output_text
+    return str(payload)
+
+
+def _gemini_safety_settings():
+    if not hasattr(genai, "types"):
+        return []
+    SafetySetting = getattr(genai.types, "SafetySetting", None)
+    HarmCategory = getattr(genai.types, "HarmCategory", None)
+    HarmBlockThreshold = getattr(genai.types, "HarmBlockThreshold", None)
+    if None in (SafetySetting, HarmCategory, HarmBlockThreshold):
+        return []
+    try:
+        return [
+            SafetySetting(category=HarmCategory.HARM_CATEGORY_HARASSMENT, threshold=HarmBlockThreshold.BLOCK_NONE),
+            SafetySetting(category=HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold=HarmBlockThreshold.BLOCK_NONE),
+            SafetySetting(category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold=HarmBlockThreshold.BLOCK_NONE),
+            SafetySetting(category=HarmCategory.HARM_CATEGORY_SEXUAL, threshold=HarmBlockThreshold.BLOCK_NONE),
+        ]
+    except Exception:
+        return []
 
 def validate_circuit_input(data):
     """Comprehensive input validation for circuit data."""
@@ -108,17 +176,10 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Configure rate limiting
 limiter = Limiter(
-    app,
+    app=app,
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"  # Use Redis in production: "redis://localhost:6379"
-)
-
-# Initialize rate limiter
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
 )
 
 # Initialize AWS clients
@@ -134,17 +195,41 @@ except Exception as e:
 
 # Initialize Google Gemini client
 GEMINI_AVAILABLE = False
-try:
-    gemini_api_key = os.getenv('GEMINI_API_KEY')
-    if gemini_api_key:
-        genai.configure(api_key=gemini_api_key)
-        GEMINI_AVAILABLE = True
-        print("✅ Google Gemini API initialized successfully")
-    else:
-        print("⚠️  GEMINI_API_KEY not found in environment variables")
-except Exception as e:
-    print(f"❌ Google Gemini API initialization failed: {e}")
-    GEMINI_AVAILABLE = False
+SUPPORTED_GEMINI_MODEL = None
+if GEMINI_IMPORTED:
+    try:
+        gemini_api_key = os.getenv('GEMINI_API_KEY')
+        if gemini_api_key and gemini_api_key.strip():
+            genai.configure(api_key=gemini_api_key)
+            # Find a supported model, preferring gemini-2.5-pro
+            preferred_model = 'models/gemini-2.5-flash'
+            supported_model = None
+            # First check if preferred model is available
+            for model in genai.list_models():
+                if model.name == preferred_model and 'generateContent' in model.supported_generation_methods:
+                    supported_model = preferred_model
+                    break
+            # If preferred not found, take the first available
+            if not supported_model:
+                for model in genai.list_models():
+                    if 'generateContent' in model.supported_generation_methods:
+                        supported_model = model.name
+                        break
+            if supported_model:
+                # Test the configuration
+                genai.GenerativeModel(supported_model)
+                GEMINI_AVAILABLE = True
+                SUPPORTED_GEMINI_MODEL = supported_model
+                print(f"✅ Google Gemini API initialized successfully with model: {supported_model}")
+            else:
+                print("⚠️  No supported Gemini model found")
+        else:
+            print("⚠️  GEMINI_API_KEY is empty or not set in environment variables")
+    except Exception as e:
+        print(f"❌ Google Gemini API initialization failed: {str(e)}")
+        GEMINI_AVAILABLE = False
+else:
+    print("⚠️  google-generativeai package not installed. Run: pip install google-generativeai")
 
 class QuantumCircuitBuilder:
     """Interactive quantum circuit builder."""
@@ -387,66 +472,48 @@ Note: Focus on educational aspects of quantum computing."""
                     raise Exception("Gemini API not available")
 
                 try:
-                    # Map model IDs to Gemini model names
-                    gemini_model_map = {
-                        'models/gemini-2.5-flash': 'gemini-2.5-flash',
-                        'models/gemini-2.5-pro': 'gemini-2.5-pro',
-                        'models/gemini-flash-latest': 'gemini-flash-latest'
-                    }
-
-                    model_name = gemini_model_map.get(model_id, 'gemini-2.5-flash')
-                    model = genai.GenerativeModel(model_name)
-
-                    # Configure generation parameters
-                    generation_config = genai.types.GenerationConfig(
-                        temperature=0.7,
-                        max_output_tokens=500,
-                    )
-
-                    # Use a safer prompt for Gemini to avoid safety filters
-                    gemini_prompt = f"""Please explain this quantum computing circuit:
-
-{circuit_str}
-
-This circuit contains {gate_count} quantum gates. Please provide:
-1. A simple explanation of what this circuit does
-2. The key quantum computing concepts it demonstrates
-3. What you would expect to measure as output
-
-Keep your explanation clear and educational."""
-
+                    if not SUPPORTED_GEMINI_MODEL:
+                        raise Exception("Gemini model not configured")
+                    model = genai.GenerativeModel(SUPPORTED_GEMINI_MODEL)
+                    gemini_prompt = [{
+                        'role': 'user',
+                        'parts': [{'text': f"This is a safe educational quantum computing request. Respond with beginner-friendly guidance.\n\n{prompt}"}]
+                    }]
                     response = model.generate_content(
-                        gemini_prompt,
-                        generation_config=generation_config
+                        contents=gemini_prompt,
+                        safety_settings=_gemini_safety_settings(),
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.7,
+                            max_output_tokens=500
+                        )
                     )
 
-                    # Extract text from Gemini response properly
-                    completion_text = ""
-                    if response.candidates and len(response.candidates) > 0:
-                        candidate = response.candidates[0]
-                        if candidate.content and len(candidate.content.parts) > 0:
-                            completion_text = candidate.content.parts[0].text
-                        else:
-                            # Handle blocked responses
-                            completion_text = f"[Response blocked by safety filters - finish reason: {candidate.finish_reason}]"
-                    else:
-                        completion_text = "[No response generated]"
+                    text = _extract_gemini_text(response)
+                    if not text:
+                        raise Exception("Empty response from Gemini")
 
-                    # Return response in format similar to AWS models
-                    return {
-                        'body': {
-                            'read': lambda: json.dumps({
-                                'completion': completion_text
-                            }).encode('utf-8')
-                        }
-                    }
-
+                    return text
                 except Exception as e:
+                    print(f"Gemini API error: {str(e)}")
                     raise Exception(f"Gemini API error: {str(e)}")
-                else:
-                    # Default case - should not happen
-                    raise Exception(f"Unsupported model type: {model_type}")
-
+            else:
+                """Call Bedrock model"""
+                response = bedrock_runtime.invoke_model(
+                    ModelId=model_id,
+                    Body=body.encode('utf-8')
+                )
+                response_body = response.get('body')
+                if hasattr(response_body, 'read'):
+                    response_body = response_body.read()
+                if isinstance(response_body, bytes):
+                    response_body = response_body.decode('utf-8')
+                if not response_body:
+                    return {}
+                try:
+                    return json.loads(response_body)
+                except json.JSONDecodeError:
+                    return {'text': response_body}
+            
         for model_id, model_type in all_models:
             try:
                 print(f"DEBUG: Trying model {model_id} ({model_type})", file=sys.stderr)
@@ -468,31 +535,43 @@ Keep your explanation clear and educational."""
         if response is None:
             raise last_error or Exception("No AI models available in your region")
         
-        response_body = json.loads(response['body'].read())
-        
-        # Parse response based on model type
-        if used_model[1] == 'openai':
-            explanation = response_body.get('choices', [{}])[0].get('text', str(response_body))
-        elif used_model[1] == 'claude':
-            explanation = response_body['content'][0]['text']
-        elif used_model[1] == 'titan':
-            explanation = response_body['results'][0]['outputText']
-        elif used_model[1] == 'ai21':
-            explanation = response_body['completions'][0]['data']['text']
-        elif used_model[1] == 'llama':
-            explanation = response_body['generation']
-        elif used_model[1] == 'cohere':
-            explanation = response_body['generations'][0]['text']
-        elif used_model[1] == 'gemini':
-            explanation = response_body.get('completion', str(response_body))
-        else:
-            explanation = str(response_body)
-        
-        return jsonify({
-            'status': 'success',
-            'explanation': explanation,
-            'model_used': used_model[0]
-        })
+        try:
+            if not isinstance(response, dict):
+                if isinstance(response, str):
+                    try:
+                        response = json.loads(response)
+                    except json.JSONDecodeError:
+                        response = {'text': response}
+                else:
+                    response = {'text': str(response)}
+
+            if used_model[1] == 'openai':
+                explanation = _extract_openai_text(response)
+            elif used_model[1] == 'claude':
+                explanation = response['content'][0]['text']
+            elif used_model[1] == 'titan':
+                explanation = response['results'][0]['outputText']
+            elif used_model[1] == 'ai21':
+                explanation = response['completions'][0]['data']['text']
+            elif used_model[1] == 'llama':
+                explanation = response['generation']
+            elif used_model[1] == 'cohere':
+                explanation = response['generations'][0]['text']
+            elif used_model[1] == 'gemini':
+                explanation = response
+            else:
+                explanation = str(response)
+            
+            print(f"DEBUG: Final explanation type: {used_model[1]}, length: {len(explanation)}")
+            
+            return jsonify({
+                'status': 'success',
+                'explanation': explanation,
+                'model_used': used_model[0]
+            })
+        except Exception as parsing_error:
+            print(f"DEBUG: Parsing failed for {used_model}: {str(parsing_error)}")
+            raise parsing_error
         
     except Exception as e:
         # Fallback to rule-based explanation if Bedrock fails
@@ -650,16 +729,20 @@ def aws_status():
         'region': Config.AWS_REGION
     })
 
+@app.route('/api/health')
+def health_check():
+    """Health check endpoint for Render."""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'QuantumViz Agent API',
+        'version': '1.0.0',
+        'aws_available': AWS_AVAILABLE,
+        'gemini_available': GEMINI_AVAILABLE
+    })
+
 if __name__ == '__main__':
-    # Only bind to all interfaces in development
-    host = '127.0.0.1' if os.getenv('FLASK_ENV', 'production') == 'production' else '0.0.0.0'
+    # Get port from environment (Render sets PORT)
+    port = int(os.getenv('PORT', 5000))
+    host = '0.0.0.0'  # Always bind to all interfaces for deployment
     debug_mode = os.getenv('FLASK_ENV', 'development') == 'development'
-    port = int(os.getenv('FLASK_PORT', 5000))
-
-    print(f"🚀 Starting QuantumViz Agent Web Interface")
-    print(f"   Debug Mode: {debug_mode}")
-    print(f"   Host: {host}")
-    print(f"   Port: {port}")
-    print(f"   AWS Available: {AWS_AVAILABLE}")
-
-    app.run(debug=debug_mode, host=host, port=port)
+    app.run(host=host, port=port, debug=debug_mode)
