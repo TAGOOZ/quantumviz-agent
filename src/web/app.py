@@ -36,7 +36,13 @@ except ImportError:
 
 # Add parent directory to path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import Config
+try:
+    from config import Config
+except ImportError:
+    # Fallback config if import fails
+    class Config:
+        AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
+        S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME', 'quantumviz-agent-assets')
 
 def retry_on_failure(max_attempts=3, backoff_factor=1.0):
     """Decorator for retrying AWS API calls with exponential backoff."""
