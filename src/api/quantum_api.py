@@ -221,6 +221,26 @@ class QuantumAPI:
         except Exception as e:
             return jsonify({'status': 'error', 'message': str(e)})
     
+    @app.route('/api/algorithms/teleport', methods=['POST'])
+    @require_api_key
+    def quantum_teleportation():
+        """Run quantum teleportation protocol."""
+        try:
+            data = request.json
+            message_qubit = data.get('message_qubit', 2)
+            
+            result = algorithms.quantum_teleportation(message_qubit)
+            
+            return jsonify({
+                'status': 'success',
+                'results': result['results'],
+                'teleportation_success': result['teleportation_success'],
+                'protocol': 'quantum_teleportation'
+            })
+            
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)})
+    
     @app.route('/api/visualize/bloch', methods=['POST'])
     @require_api_key
     def visualize_bloch_sphere():

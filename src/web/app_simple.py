@@ -4,7 +4,7 @@ QuantumViz Agent - Simple Demo Version
 Minimal Flask app for demo purposes.
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import json
 import os
@@ -18,11 +18,18 @@ current_circuit = []
 
 @app.route('/')
 def index():
-    return jsonify({
-        'message': 'QuantumViz Agent API',
-        'status': 'running',
-        'endpoints': ['/api/health', '/api/add_gate', '/api/simulate', '/api/reset']
-    })
+    """Serve the main HTML interface."""
+    try:
+        # Look for the HTML file in the dist directory
+        dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'dist')
+        return send_from_directory(dist_path, 'index.html')
+    except:
+        # Fallback to API info if HTML not found
+        return jsonify({
+            'message': 'QuantumViz Agent API',
+            'status': 'running',
+            'endpoints': ['/api/health', '/api/add_gate', '/api/simulate', '/api/reset']
+        })
 
 @app.route('/api/health')
 def health_check():
