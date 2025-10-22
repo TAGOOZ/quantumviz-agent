@@ -1,0 +1,10 @@
+# Ignore Python backend files
+src/
+venv/
+*.py
+requirements.txt
+*.pyc
+__pycache__/
+
+# Keep only frontend files
+!dist/
