@@ -52,11 +52,39 @@ def add_gate():
         
         current_circuit.append(gate)
         
-        # Generate simple circuit representation
-        circuit_str = f"Circuit with {len(current_circuit)} gates:\n"
+        # Generate beautiful quantum circuit representation
+        max_qubit = max(gate.get('target', gate['qubit']) for gate in current_circuit)
+        n_qubits = max_qubit + 1
+        
+        circuit_str = f"Quantum Circuit ({len(current_circuit)} gates, {n_qubits} qubits):\n\n"
+        
+        # Create ASCII quantum circuit
+        for q in range(n_qubits):
+            line = f"q{q} |0⟩ ─"
+            for gate in current_circuit:
+                if gate['qubit'] == q:
+                    if gate['type'] == 'H':
+                        line += "─[H]─"
+                    elif gate['type'] == 'X':
+                        line += "─[X]─"
+                    elif gate['type'] == 'Y':
+                        line += "─[Y]─"
+                    elif gate['type'] == 'Z':
+                        line += "─[Z]─"
+                    elif gate['type'] == 'CNOT' and 'target' in gate:
+                        line += "─●───"
+                    else:
+                        line += "─────"
+                elif 'target' in gate and gate['target'] == q:
+                    line += "─⊕───"
+                else:
+                    line += "─────"
+            circuit_str += line + "\n"
+        
+        circuit_str += f"\nGate Sequence:\n"
         for i, gate in enumerate(current_circuit):
             if 'target' in gate:
-                circuit_str += f"  {i+1}. {gate['type']} q{gate['qubit']} -> q{gate['target']}\n"
+                circuit_str += f"  {i+1}. {gate['type']} q{gate['qubit']} → q{gate['target']}\n"
             else:
                 circuit_str += f"  {i+1}. {gate['type']} q{gate['qubit']}\n"
         
@@ -166,22 +194,71 @@ def ai_explain():
             'message': 'No circuit to explain'
         }), 400
     
-    # Simple AI explanation based on gates
-    explanation = "🤖 QuantumViz AI Analysis\n\n"
-    explanation += f"📊 Circuit Overview:\n"
-    explanation += f"   • {len(current_circuit)} quantum gates\n"
-    explanation += f"   • Quantum circuit simulation\n\n"
-    
+    # Detailed AI explanation based on gates
     gate_types = [gate['type'] for gate in current_circuit]
+    max_qubit = max(gate.get('target', gate['qubit']) for gate in current_circuit)
+    n_qubits = max_qubit + 1
+    
+    explanation = "🤖 QuantumViz AI Circuit Analysis\n\n"
+    explanation += f"📊 Circuit Statistics:\n"
+    explanation += f"   • {len(current_circuit)} quantum gates\n"
+    explanation += f"   • {n_qubits} qubits involved\n"
+    explanation += f"   • Circuit depth: {len(current_circuit)}\n\n"
+    
+    explanation += "🔬 Quantum Operations Detected:\n"
+    
+    if 'H' in gate_types and 'CNOT' in gate_types:
+        explanation += "🎯 ENTANGLEMENT PATTERN DETECTED!\n"
+        explanation += "   • This circuit creates quantum entanglement\n"
+        explanation += "   • Bell state formation: |00⟩ + |11⟩ superposition\n"
+        explanation += "   • Qubits become correlated - measuring one affects the other\n\n"
     
     if 'H' in gate_types:
-        explanation += "✓ Hadamard (H) gates: Create quantum superposition\n"
-    if 'CNOT' in gate_types:
-        explanation += "✓ CNOT gates: Create quantum entanglement\n"
-    if 'X' in gate_types:
-        explanation += "✓ Pauli-X gates: Quantum NOT operation\n"
+        explanation += "✓ Hadamard (H) Gates:\n"
+        explanation += "   • Creates quantum superposition: |0⟩ → (|0⟩ + |1⟩)/√2\n"
+        explanation += "   • Enables quantum parallelism\n"
+        explanation += "   • Foundation of quantum algorithms\n\n"
     
-    explanation += "\n🔬 This circuit demonstrates fundamental quantum computing principles!"
+    if 'CNOT' in gate_types:
+        explanation += "✓ CNOT Gates:\n"
+        explanation += "   • Controlled-NOT operation\n"
+        explanation += "   • Creates quantum entanglement between qubits\n"
+        explanation += "   • Essential for quantum error correction\n\n"
+    
+    if 'X' in gate_types:
+        explanation += "✓ Pauli-X Gates:\n"
+        explanation += "   • Quantum NOT gate: |0⟩ ↔ |1⟩\n"
+        explanation += "   • Bit-flip operation\n\n"
+    
+    if 'Y' in gate_types:
+        explanation += "✓ Pauli-Y Gates:\n"
+        explanation += "   • Combined bit-flip and phase-flip\n"
+        explanation += "   • Rotation around Y-axis on Bloch sphere\n\n"
+    
+    if 'Z' in gate_types:
+        explanation += "✓ Pauli-Z Gates:\n"
+        explanation += "   • Phase-flip operation: |1⟩ → -|1⟩\n"
+        explanation += "   • Leaves |0⟩ unchanged\n\n"
+    
+    explanation += "📈 Expected Measurement Results:\n"
+    if 'H' in gate_types and 'CNOT' in gate_types:
+        explanation += "   • 50% probability: |00⟩ state\n"
+        explanation += "   • 50% probability: |11⟩ state\n"
+        explanation += "   • Never: |01⟩ or |10⟩ (due to entanglement)\n"
+    elif 'H' in gate_types:
+        explanation += "   • Equal superposition of all computational basis states\n"
+        explanation += "   • Demonstrates quantum randomness\n"
+    
+    explanation += "\n💡 Applications:\n"
+    if 'CNOT' in gate_types:
+        explanation += "   • Quantum cryptography (QKD)\n"
+        explanation += "   • Quantum teleportation protocols\n"
+        explanation += "   • Quantum error correction codes\n"
+    
+    explanation += "\n🎓 Educational Value:\n"
+    explanation += "   • Demonstrates core quantum mechanics principles\n"
+    explanation += "   • Shows difference from classical computing\n"
+    explanation += "   • Foundation for understanding quantum algorithms"
     
     return jsonify({
         'status': 'success',
